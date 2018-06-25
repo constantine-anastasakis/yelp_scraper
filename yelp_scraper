@@ -1,3 +1,6 @@
+# Use this script to collect and organize information from Yelp.com
+
+# The script requires the user to install Beautiful Soup, a Python package for parsing HTML and XML documents - documentation (including installation information) avaiable here: https://www.crummy.com/software/BeautifulSoup/bs4/doc/
 
 import datetime
 import requests
@@ -5,12 +8,12 @@ from bs4 import BeautifulSoup
 import os
 import csv
 
-#r = requests.get("https://www.yelp.com/search?find_desc=Restaurants&find_loc=New+York,+NY&start=1")
+csv_headers = ["business_name", "neighborhood", "address", "phone"]
 
-csv_headers = ["business_name", "address", "phone"]
+# The user must create a folder titled "scrapings" on their desktop.
 
 def write_products_to_file(filename="listings.csv", products=[]):
-    filepath = os.path.join(os.path.dirname(__file__), "db", filename)
+    filepath = os.path.join(os.path.dirname(__file__), "scrapings", filename)
     with open(filepath, "w") as csv_file:
         writer = csv.DictWriter(csv_file, fieldnames=csv_headers)
         writer.writeheader()
@@ -19,33 +22,26 @@ def write_products_to_file(filename="listings.csv", products=[]):
 
 products = []
 
-search_results = range(0,360,30) #may need to hardcode the actual number of search results
+# The default starting URL in this script shows the first page of listings for "Restaurants" in "New York." User can swap the URL with the URL of the first page of search results for any search query.
+
+# The starting URL will only provide the first 30 search listings, the script must be able to crawl ALL listings.
+
+search_results = range(0,990,30) 
 for results in search_results:
     r = requests.get(f"https://www.yelp.com/search?find_desc=Restaurants&find_loc=New+York,+NY&start={results}")
-    #print(r)
 
     raw = r.text
     soup = BeautifulSoup(raw, "html.parser")
-
-    #soup.find_all("a", {"class":"biz-name"})
-    #soup.find_all("div", {"class":"secondary-attributes"})
-#
-    ##alternatively: soup.select(selector=".biz-name")
-#
-    #business_name = soup.find_all("a", {"class":"biz-name"})
-    #secondary_attributes = soup.find_all("div", {"class":"secondary-attributes"})
-#
-    #for tag in business_name:
-    #    print(tag.text)
 
     listings = soup.select(selector=".regular-search-result")
 
     for listing in listings:
         business_name = listing.find("a",{"class":"biz-name"})
+        neighborhood = listing.find("span",{"class":"neighborhood-str-list"})
         address = listing.find("address")
         phone = listing.find("span",{"class":"biz-phone"})
 
-        d = {"business_name":business_name.text.strip(),"address":address.text.strip(),"phone":phone.text.strip()}
+        d = {"business_name":business_name.text.strip(),"neighborhood":neighborhood.text.strip(),"address":address.text.strip(),"phone":phone.text.strip()}
 
         products.append(d)
 
